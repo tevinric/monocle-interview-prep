@@ -1,0 +1,69 @@
+services:
+  # PostgreSQL database
+  postgres:
+    image: postgres:16
+    container_name: @@SLUG@@_db
+    environment:
+      POSTGRES_DB: ${@@PREFIX@@_DB_NAME}
+      POSTGRES_USER: ${@@PREFIX@@_DB_USER}
+      POSTGRES_PASSWORD: ${@@PREFIX@@_DB_PASSWORD}
+      POSTGRES_INITDB_ARGS: "--encoding=UTF8"
+    volumes:
+      - @@SLUG@@_pg_data:/var/lib/postgresql/data
+      - ./database/sql_init.sql:/docker-entrypoint-initdb.d/sql_init.sql
+    ports:
+      - "${@@PREFIX@@_DB_PORT_HOST:-5439}:5432"
+    restart: unless-stopped
+    networks:
+      - @@SLUG@@_net
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${@@PREFIX@@_DB_USER} -d ${@@PREFIX@@_DB_NAME}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # Flask API (gunicorn) — listens on 5000 inside the network
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: @@SLUG@@_backend
+    environment:
+      - @@PREFIX@@_DB_HOST=@@SLUG@@_db
+      - @@PREFIX@@_DB_PORT=5432
+      - @@PREFIX@@_DB_NAME=${@@PREFIX@@_DB_NAME}
+      - @@PREFIX@@_DB_USER=${@@PREFIX@@_DB_USER}
+      - @@PREFIX@@_DB_PASSWORD=${@@PREFIX@@_DB_PASSWORD}
+      - @@PREFIX@@_FLASK_ENV=${@@PREFIX@@_FLASK_ENV:-production}
+    ports:
+      - "${@@PREFIX@@_BACKEND_PORT:-5100}:5000"
+    depends_on:
+      postgres:
+        condition: service_healthy
+    restart: unless-stopped
+    networks:
+      - @@SLUG@@_net
+
+  # React build served by nginx, proxying /api to the backend
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: @@SLUG@@_frontend
+    ports:
+      - "${@@PREFIX@@_FRONTEND_PORT:-3100}:80"
+    depends_on:
+      - backend
+    restart: unless-stopped
+    networks:
+      - @@SLUG@@_net
+
+volumes:
+  @@SLUG@@_pg_data:
+    driver: local
+    name: @@SLUG@@_pg_data
+
+networks:
+  @@SLUG@@_net:
+    driver: bridge
+    name: @@SLUG@@_net

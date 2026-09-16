@@ -1,0 +1,86 @@
+# =============================================================================
+# @@SLUG@@ — Key Vault compose changes
+# =============================================================================
+# MERGE these into the app's docker-compose.yml by hand. This is not a drop-in
+# file: every app's compose differs, and the postgres/backend blocks below replace
+# parts of what is already there rather than being added alongside it.
+#
+# SHARED HOST WARNING: every name below is prefixed with @@SLUG@@ because Docker
+# volume, container and network names are GLOBAL to the daemon, not scoped to the
+# compose project. A generic name lets another app's keyvault-init overwrite this
+# app's secrets file, and the backend then boots with the wrong credentials and no
+# error. Do not shorten these names.
+# =============================================================================
+
+services:
+  # ── ADD: Key Vault bootstrapper (init container) ──────────────────────────
+  # Runs first, to completion. Everything that needs a secret waits for it to
+  # exit 0, so a missing secret or unreachable vault aborts the whole stack.
+  # These four variables are the ONLY ones that must exist in the shell.
+  keyvault-init:
+    build:
+      context: ./keyvault
+      dockerfile: Dockerfile
+    container_name: @@SLUG@@_keyvault_init
+    environment:
+      - @@VAULT_PREFIX@@_AZURE_KEYVAULT_URL=${@@VAULT_PREFIX@@_AZURE_KEYVAULT_URL:?export @@VAULT_PREFIX@@_AZURE_KEYVAULT_URL before running docker compose (see README.md)}
+      - @@VAULT_PREFIX@@_AZURE_TENANT_ID=${@@VAULT_PREFIX@@_AZURE_TENANT_ID:?export @@VAULT_PREFIX@@_AZURE_TENANT_ID before running docker compose (see README.md)}
+      - @@VAULT_PREFIX@@_AZURE_CLIENT_ID=${@@VAULT_PREFIX@@_AZURE_CLIENT_ID:?export @@VAULT_PREFIX@@_AZURE_CLIENT_ID before running docker compose (see README.md)}
+      - @@VAULT_PREFIX@@_AZURE_CLIENT_SECRET=${@@VAULT_PREFIX@@_AZURE_CLIENT_SECRET:?export @@VAULT_PREFIX@@_AZURE_CLIENT_SECRET before running docker compose (see README.md)}
+    volumes:
+      - @@SLUG@@_secrets:/secrets          # the ONLY service that mounts this read-write
+    restart: "no"
+    networks:
+      - @@SLUG@@_network
+
+  postgres:
+    # ── REPLACE the whole environment: block ────────────────────────────────
+    # The postgres image resolves these *_FILE variables itself, so no credential
+    # passes through compose and `docker inspect` stays clean.
+    environment:
+      POSTGRES_DB_FILE: /secrets/parts/@@VAULT_PREFIX@@-DB-NAME
+      POSTGRES_USER_FILE: /secrets/parts/@@VAULT_PREFIX@@-DB-USER
+      POSTGRES_PASSWORD_FILE: /secrets/parts/@@VAULT_PREFIX@@-DB-PASSWORD
+      POSTGRES_INITDB_ARGS: "--encoding=UTF8"
+    volumes:
+      # ── ADD to the existing volume list ─────────────────────────────────
+      - @@SLUG@@_secrets:/secrets:ro
+    # ── ADD ──────────────────────────────────────────────────────────────
+    depends_on:
+      keyvault-init:
+        condition: service_completed_successfully
+    # ── REPLACE: the old healthcheck interpolated ${..._DB_USER} from the
+    #    shell, which no longer exists. Read the values from the files instead.
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U \"$$(cat /secrets/parts/@@VAULT_PREFIX@@-DB-USER)\" -d \"$$(cat /secrets/parts/@@VAULT_PREFIX@@-DB-NAME)\""]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  backend:
+    # ── REPLACE the environment: block — strip EVERY secret out of it ───────
+    # Non-secret topology only. Credentials and tunables are loaded from
+    # /secrets/backend.env by the entrypoint (backend/entrypoint.sh).
+    environment:
+      - @@ENV_PREFIX@@_DB_HOST=@@SLUG@@_db
+      - @@ENV_PREFIX@@_DB_PORT=5432
+      - @@ENV_PREFIX@@_BACKEND_PORT=5000
+      - @@ENV_PREFIX@@_FRONTEND_PORT=${@@ENV_PREFIX@@_FRONTEND_PORT:-3000}
+    volumes:
+      # ── ADD to the existing volume list ─────────────────────────────────
+      - @@SLUG@@_secrets:/secrets:ro
+    # ── ADD the keyvault-init condition alongside the existing postgres one ──
+    depends_on:
+      keyvault-init:
+        condition: service_completed_successfully
+      postgres:
+        condition: service_healthy
+
+volumes:
+  # ── ADD ───────────────────────────────────────────────────────────────────
+  # Holds this app's plaintext secrets for the lifetime of the stack. Mounted
+  # read-only everywhere except keyvault-init. Never mount it into another app,
+  # and exclude it from backups.
+  @@SLUG@@_secrets:
+    driver: local
+    name: @@SLUG@@_secrets
