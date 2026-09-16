@@ -1,0 +1,78 @@
+# =============================================================================
+# Lens corpus — the only documents the agent can see
+# =============================================================================
+# `make ingest` downloads each source into corpus/raw/, records its SHA-256 and
+# provenance in `documents`, parses, chunks and embeds it. Source files are NEVER
+# committed. A failed download is recorded as status=unavailable and shown in
+# /corpus — the agent never runs on a silently smaller corpus.
+#
+# heading_patterns (optional) help the PDF parser recognise structural headings
+# that the document's fonts do not make obvious. Level 1 = top-level section;
+# chunks never cross a level-1 boundary.
+# =============================================================================
+documents:
+  - key: ss123
+    short_name: SS1/23
+    title: "SS1/23 — Model risk management principles for banks"
+    publisher: Prudential Regulation Authority (Bank of England)
+    version: "Supervisory Statement 1/23, May 2023"
+    source_url: https://www.bankofengland.co.uk/-/media/boe/files/prudential-regulation/supervisory-statement/2023/ss123.pdf
+    licence_note: "© Bank of England. Public supervisory statement, used here for non-commercial demonstration."
+    # SS1/23 numbers its paragraphs (“2.4 For the purposes of…”), so a numeric pattern
+    # would turn every paragraph into a heading. Only the named parts are structural.
+    heading_patterns:
+      - { level: 1, regex: '^Principle \d+\s*[–—:-]' }
+      - { level: 1, regex: '^\d{1,2}[:.]?\s+(Introduction|Background|Purpose|Implementation|Overview|Scope)\b' }
+
+  - key: sr117
+    short_name: SR 11-7
+    title: "SR 11-7 — Supervisory Guidance on Model Risk Management (Attachment)"
+    publisher: Board of Governors of the Federal Reserve System and the OCC
+    version: "Attachment to SR letter 11-7, April 4, 2011"
+    source_url: https://www.federalreserve.gov/boarddocs/srletters/2011/sr1107a1.pdf
+    licence_note: "US federal government work; public domain in the United States."
+    heading_patterns:
+      - { level: 1, regex: '^[IVX]{1,4}\.\s+[A-Z]' }
+
+  - key: euaiact
+    short_name: EU AI Act
+    title: "Regulation (EU) 2024/1689 — Artificial Intelligence Act"
+    publisher: European Parliament and Council of the European Union (Official Journal)
+    version: "OJ L, 12.7.2024"
+    source_url: https://eur-lex.europa.eu/legal-content/EN/TXT/PDF/?uri=OJ:L_202401689
+    licence_note: "EU legislation published in the Official Journal via EUR-Lex; free to reuse."
+    heading_patterns:
+      - { level: 1, regex: '^CHAPTER [IVXLC]+$' }
+      - { level: 1, regex: '^ANNEX [IVXLC]+$' }
+      - { level: 2, regex: '^SECTION \d+$' }
+      - { level: 3, regex: '^Article \d+[a-z]?$' }
+
+  - key: popia
+    short_name: POPIA
+    title: "Protection of Personal Information Act, 2013 (Act No. 4 of 2013)"
+    publisher: Republic of South Africa — Government Gazette
+    version: "Act No. 4 of 2013 (official gazetted text)"
+    source_url: https://www.gov.za/sites/default/files/gcis_document/201409/3706726-11act4of2013protectionofpersonalinforcorrect.pdf
+    licence_note: "South African legislation; official government publication."
+    heading_patterns:
+      - { level: 1, regex: '^CHAPTER \d+$' }
+      - { level: 2, regex: '^Part [A-Z]$' }
+
+  - key: iso42001
+    short_name: ISO/IEC 42001
+    title: "Overview of ISO/IEC 42001 (AI Management System) — public overview material"
+    publisher: Microsoft (document hosted by UNIDO)
+    version: "Overview presentation (hosted July 2025, per source URL)"
+    source_url: https://www.unido.org/sites/default/files/files/2025-07/Microsoft%20-%20Overview%20of%20ISO%20IEC%2042001.pdf
+    licence_note: "Third-party overview, NOT the text of the standard (which is sold by ISO). Answers citing it reflect Microsoft's summary."
+
+  - key: bcbs239
+    short_name: BCBS 239
+    title: "BCBS 239 — Principles for effective risk data aggregation and risk reporting"
+    publisher: Basel Committee on Banking Supervision (Bank for International Settlements)
+    version: "January 2013"
+    source_url: https://www.bis.org/publications/201301-guidelines-principles-effective-risk-data-aggregation-and-risk-reporting.pdf
+    licence_note: "© Bank for International Settlements. Freely available; brief excerpts may be reproduced with the source stated."
+    heading_patterns:
+      - { level: 1, regex: '^[IVX]{1,4}\.\s+[A-Z]' }
+      - { level: 2, regex: '^Principle \d+\s*$' }

@@ -1,0 +1,40 @@
+#!/usr/bin/env bash
+# =============================================================================
+# lens — Azure Key Vault bootstrap credentials
+# =============================================================================
+# Copy this file to lens_kv_init.sh (gitignored), fill in the four values, and
+# source it into your shell before bringing the stack up:
+#
+#     cp lens_kv_init.sh.example lens_kv_init.sh
+#     source ./lens_kv_init.sh
+#     docker compose up --build -d
+#
+# These four are the ONLY variables that need to exist in your shell. Every
+# application secret is read from the Key Vault by the keyvault-init container at
+# startup — see README.md for the list of LENS-* secrets the vault must
+# contain.
+#
+# SHARED HOST: the variable names are prefixed with LENS_ on purpose.
+# Several apps' init scripts may be sourced into the same shell, and unprefixed
+# names would silently leave one app authenticating as another app's principal.
+#
+# NOTE: these are the credentials of the SERVICE PRINCIPAL that reads the vault.
+# They are not any Entra app registration your app authenticates USERS with — that
+# one belongs in the vault as a LENS-AZURE-CLIENT-ID secret.
+# =============================================================================
+
+# Vault URI, including the trailing slash. Find it with:
+#   az keyvault show --name <vault-name> --query properties.vaultUri -o tsv
+export LENS_AZURE_KEYVAULT_URL="https://your-vault-name.vault.azure.net/"
+
+# Directory (tenant) ID of the service principal.
+export LENS_AZURE_TENANT_ID="00000000-0000-0000-0000-000000000000"
+
+# Application (client) ID of the service principal. One principal PER APP —
+# never reuse another app's.
+export LENS_AZURE_CLIENT_ID="00000000-0000-0000-0000-000000000000"
+
+# Client secret VALUE (not the secret ID) generated for the service principal.
+export LENS_AZURE_CLIENT_SECRET="CHANGE_me_service_principal_client_secret"
+
+echo "[lens] Key Vault bootstrap credentials exported into the current shell."

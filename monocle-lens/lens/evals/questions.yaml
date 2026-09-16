@@ -1,0 +1,128 @@
+# =============================================================================
+# Lens evaluation set — `make eval`
+# =============================================================================
+# thresholds are acceptance criteria, so a run reports pass/fail rather than a number
+# that needs interpreting. latency and cost are maxima; everything else is a minimum.
+#
+# expected_documents   at least one must appear in the top 8 retrieved for the question
+# must_cite_contains   at least one citation's section path must contain one of these
+# answerable: false    the corpus cannot support an answer — the agent must abstain
+# =============================================================================
+thresholds:
+  citation_precision: 0.85
+  groundedness: 0.80
+  retrieval_hit_rate_at_8: 0.80
+  abstention_correctness: 0.80
+  latency_p95_ms: 45000
+  cost_per_question_usd: 0.10
+
+questions:
+  - key: ss123_validation
+    question: "What does SS1/23 expect of independent model validation?"
+    expected_documents: [ss123]
+
+  - key: ss123_vs_sr117_validation
+    question: "How do SS1/23 and SR 11-7 compare on independent review and validation of models?"
+    expected_documents: [ss123, sr117]
+
+  - key: ss123_inventory
+    question: "What should a model inventory contain under SS1/23?"
+    expected_documents: [ss123]
+
+  - key: ss123_board
+    question: "What responsibilities does SS1/23 place on the board and senior management for model risk?"
+    expected_documents: [ss123]
+
+  - key: ss123_tiering
+    question: "How does SS1/23 describe risk tiering of models?"
+    expected_documents: [ss123]
+
+  - key: sr117_effective_challenge
+    question: "What does SR 11-7 mean by effective challenge?"
+    expected_documents: [sr117]
+
+  - key: sr117_model_definition
+    question: "How does SR 11-7 define a model, and what are its three components?"
+    expected_documents: [sr117]
+
+  - key: sr117_validation_elements
+    question: "What are the core elements of model validation in SR 11-7?"
+    expected_documents: [sr117]
+
+  - key: euaiact_prohibited
+    question: "Which AI practices are prohibited under the EU AI Act?"
+    expected_documents: [euaiact]
+    must_cite_contains: ["Article 5"]
+
+  - key: euaiact_credit_high_risk
+    question: "Is an AI system used to evaluate the creditworthiness of individuals high-risk under the EU AI Act?"
+    expected_documents: [euaiact]
+
+  - key: euaiact_human_oversight
+    question: "What human oversight is required for high-risk AI systems under the EU AI Act?"
+    expected_documents: [euaiact]
+    must_cite_contains: ["Article 14"]
+
+  - key: euaiact_record_keeping
+    question: "What record-keeping and logging does the EU AI Act require for high-risk AI systems?"
+    expected_documents: [euaiact]
+    must_cite_contains: ["Article 12"]
+
+  - key: euaiact_deployer_obligations
+    question: "What are the obligations of deployers of high-risk AI systems under the EU AI Act?"
+    expected_documents: [euaiact]
+    must_cite_contains: ["Article 26"]
+
+  - key: euaiact_data_governance
+    question: "What does the EU AI Act require for training, validation and testing data governance?"
+    expected_documents: [euaiact]
+    must_cite_contains: ["Article 10"]
+
+  - key: popia_lawful_processing
+    question: "What are the conditions for lawful processing of personal information under POPIA?"
+    expected_documents: [popia]
+
+  - key: popia_operator
+    question: "What must a responsible party ensure when an operator processes personal information on its behalf under POPIA?"
+    expected_documents: [popia]
+
+  - key: popia_transborder
+    question: "When may personal information be transferred outside the Republic under POPIA?"
+    expected_documents: [popia]
+
+  - key: popia_automated_decision
+    question: "What does POPIA say about decisions based solely on automated processing?"
+    expected_documents: [popia]
+
+  - key: bcbs239_accuracy
+    question: "What does BCBS 239 require for the accuracy and integrity of risk data?"
+    expected_documents: [bcbs239]
+
+  - key: bcbs239_governance
+    question: "What governance and data architecture principles does BCBS 239 set out?"
+    expected_documents: [bcbs239]
+
+  - key: iso42001_aims
+    question: "What is an AI management system under ISO/IEC 42001?"
+    expected_documents: [iso42001]
+
+  # ── Deliberately unanswerable: the agent must abstain ──────────────────────
+  - key: unanswerable_internal_policy
+    question: "What is Monocle's internal AI acceptable use policy?"
+    answerable: false
+
+  - key: unanswerable_fca_consumer_duty
+    question: "What does the FCA Consumer Duty require for price and value outcomes?"
+    answerable: false
+
+  - key: unanswerable_nist_rmf
+    question: "What are the four core functions of the NIST AI Risk Management Framework?"
+    answerable: false
+
+  - key: unanswerable_basel_capital
+    question: "What is the minimum common equity tier 1 capital ratio under Basel III?"
+    answerable: false
+
+  - key: unanswerable_client_incident
+    question: "How many model risk incidents did this bank report last quarter?"
+    answerable: false
