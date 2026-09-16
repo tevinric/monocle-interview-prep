@@ -1,0 +1,33 @@
+# Questions used by `make record` (capture live model responses) and `make seed`
+# (populate the audit history). The five interview questions come first.
+questions:
+  - key: compare_validation
+    question: "What does SS1/23 require for independent model validation, and how does that compare with SR 11-7?"
+
+  - key: credit_letters
+    question: "A bank wants an LLM to draft credit decline letters sent to customers. Under the EU AI Act, what risk tier is that and what obligations follow?"
+
+  - key: second_line_genai
+    question: "What evidence would a second line typically expect before approving a GenAI use case that touches customer data?"
+
+  - key: popia_llm
+    question: "Under POPIA, what applies when client personal information is sent to a third-party LLM provider?"
+
+  - key: monocle_aup
+    question: "What is Monocle's internal AI acceptable use policy?"
+    expect: abstain
+
+  - key: bcbs239_crisis
+    question: "What does BCBS 239 expect banks to be able to do with risk data during a period of stress or crisis?"
+
+  - key: ai_act_deployers
+    question: "What must a deployer of a high-risk AI system do under the EU AI Act?"
+
+  # A deliberate tool failure: the first search times out, the planner recovers on the
+  # next iteration. The trace shows the error span — failure traces are good demo material.
+  - key: model_inventory_fault
+    question: "What should a bank's model inventory contain under SS1/23?"
+    fault_injection:
+      tool: search_corpus
+      occurrence: 1
+      error: "Simulated retrieval timeout (deliberate demo fault)"

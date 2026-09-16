@@ -1,0 +1,155 @@
+# =============================================================================
+# Lens — docker compose
+# =============================================================================
+#   Online  : source ./lens_kv_init.sh && docker compose up --build -d   (make up)
+#   Offline : make up-offline   (reuses the secrets fetched by the last online start)
+#
+# SHARED HOST: every Docker name below carries the `lens_` prefix. Volume, container
+# and network names are global to the daemon, and other apps run on this host.
+# =============================================================================
+services:
+  # Key Vault bootstrapper — runs first, to completion. Fetches the LENS-* credentials
+  # onto the lens_secrets volume. postgres and backend wait for it to exit 0, so a
+  # missing secret or unreachable vault stops the stack instead of starting it wrongly.
+  # These four variables are the ONLY ones that must exist in the shell.
+  keyvault-init:
+    build:
+      context: ./keyvault
+      dockerfile: Dockerfile
+    container_name: lens_keyvault_init
+    environment:
+      - LENS_AZURE_KEYVAULT_URL=${LENS_AZURE_KEYVAULT_URL:?export LENS_AZURE_KEYVAULT_URL before running docker compose (source ./lens_kv_init.sh)}
+      - LENS_AZURE_TENANT_ID=${LENS_AZURE_TENANT_ID:?export LENS_AZURE_TENANT_ID before running docker compose (source ./lens_kv_init.sh)}
+      - LENS_AZURE_CLIENT_ID=${LENS_AZURE_CLIENT_ID:?export LENS_AZURE_CLIENT_ID before running docker compose (source ./lens_kv_init.sh)}
+      - LENS_AZURE_CLIENT_SECRET=${LENS_AZURE_CLIENT_SECRET:?export LENS_AZURE_CLIENT_SECRET before running docker compose (source ./lens_kv_init.sh)}
+    volumes:
+      - lens_secrets:/secrets          # the ONLY service that mounts this read-write
+    restart: "no"
+    networks:
+      - lens_net
+
+  # PostgreSQL 16 + pgvector — relational data, traces and vectors in one store
+  postgres:
+    image: pgvector/pgvector:pg16
+    container_name: lens_db
+    environment:
+      # Resolved by the postgres image itself; no credential passes through compose.
+      POSTGRES_DB_FILE: /secrets/parts/LENS-DB-NAME
+      POSTGRES_USER_FILE: /secrets/parts/LENS-DB-USER
+      POSTGRES_PASSWORD_FILE: /secrets/parts/LENS-DB-PASSWORD
+      POSTGRES_INITDB_ARGS: "--encoding=UTF8"
+    volumes:
+      - lens_pg_data:/var/lib/postgresql/data
+      - ./database/sql_init.sql:/docker-entrypoint-initdb.d/sql_init.sql:ro
+      - lens_secrets:/secrets:ro
+    ports:
+      - "${LENS_DB_PORT_HOST:-5439}:5432"   # exposed so you can open a SQL client in the room
+    depends_on:
+      keyvault-init:
+        condition: service_completed_successfully
+    restart: unless-stopped
+    networks:
+      - lens_net
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U \"$$(cat /secrets/parts/LENS-DB-USER)\" -d \"$$(cat /secrets/parts/LENS-DB-NAME)\""]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+
+  # Flask API (gunicorn) — listens on 5000 inside the network
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: lens_backend
+    environment:
+      # ── Topology ──────────────────────────────────────────────────────────────
+      - LENS_DB_HOST=lens_db
+      - LENS_DB_PORT=5432
+      # ── Non-secret configuration ─────────────────────────────────────────────
+      # Committed here on purpose: a change to a deployment, price or threshold shows
+      # up in git history. Every run also snapshots the effective values into
+      # runs.config_json (with a hash), so a shell override is still traceable.
+      # Credentials are NOT here — they arrive from Key Vault via /secrets/backend.env.
+      - LENS_OPENAI_BASE_URL=${LENS_OPENAI_BASE_URL:-https://api.openai.com/v1}
+      # gpt-5.6-luna: cheapest current model that does tool calling and structured outputs
+      # ($0.20/$1.20 per 1M). It is a reasoning model, so the backend sends
+      # max_completion_tokens + reasoning_effort and omits temperature.
+      - LENS_CHAT_MODEL=${LENS_CHAT_MODEL:-gpt-5.6-luna}
+      - LENS_EMBEDDING_MODEL=${LENS_EMBEDDING_MODEL:-text-embedding-3-small}
+      # A different model grades the answers, so the system is not marking its own work.
+      - LENS_JUDGE_MODEL=${LENS_JUDGE_MODEL:-gpt-5-nano}
+      - LENS_EMBEDDING_DIMENSIONS=1536          # fixed: must match vector(1536) in sql_init.sql
+      # 'minimal' and 'max' were withdrawn from the API and now return 400.
+      - LENS_REASONING_EFFORT=${LENS_REASONING_EFFORT:-low}   # none|low|medium|high|xhigh
+      - LENS_LLM_TEMPERATURE=${LENS_LLM_TEMPERATURE:-0}       # ignored by reasoning models
+      # On a reasoning model this budget covers reasoning AND the answer, so it has to be
+      # well above the answer length or the reply is cut off with finish_reason=length.
+      - LENS_LLM_MAX_TOKENS=${LENS_LLM_MAX_TOKENS:-8000}      # reasoning + output combined
+      - LENS_LLM_TIMEOUT_SECONDS=${LENS_LLM_TIMEOUT_SECONDS:-90}
+      - LENS_MAX_TOOL_ITERATIONS=${LENS_MAX_TOOL_ITERATIONS:-3}
+      - LENS_CONFIDENCE_THRESHOLD=${LENS_CONFIDENCE_THRESHOLD:-0.55}
+      # USD per 1K tokens — OpenAI list prices for the models above. The rates used are
+      # stored with every run, so a price change never rewrites past costs.
+      - LENS_COST_PER_1K_INPUT=${LENS_COST_PER_1K_INPUT:-0.0002}
+      - LENS_COST_PER_1K_OUTPUT=${LENS_COST_PER_1K_OUTPUT:-0.0012}
+      - LENS_COST_PER_1K_EMBEDDING=${LENS_COST_PER_1K_EMBEDDING:-0.00002}
+      - LENS_DEMO_MODE=${LENS_DEMO_MODE:-false}
+      # Sign-in comes from the vault (LENS-ENV-TYPE and the LENS-ENTRA-* values, written
+      # to /secrets/backend.env by keyvault-init). Nothing about it is set here: an
+      # environment entry would be sourced BEFORE the vault file and could be used to
+      # turn authentication off from the host shell.
+      - LENS_OTLP_ENDPOINT=${LENS_OTLP_ENDPOINT:-}
+      - LENS_FLASK_ENV=${LENS_FLASK_ENV:-production}
+    volumes:
+      - lens_secrets:/secrets:ro
+      - ./corpus:/app/corpus                                  # source documents persist outside the container
+      - ./evals:/app/evals:ro
+      - ./backend/lens/agent/prompts:/app/lens/agent/prompts:ro   # edit a prompt, hit Replay — no rebuild
+      - ./backend/lens/demo/recordings:/app/lens/demo/recordings  # demo-mode LLM recordings
+    ports:
+      - "${LENS_BACKEND_PORT:-5100}:5000"
+    depends_on:
+      keyvault-init:
+        condition: service_completed_successfully
+      postgres:
+        condition: service_healthy
+    restart: unless-stopped
+    networks:
+      - lens_net
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request;urllib.request.urlopen('http://localhost:5000/api/health')"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+
+  # React build served by nginx, proxying /api to the backend
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: lens_frontend
+    ports:
+      - "${LENS_FRONTEND_PORT:-3100}:80"
+    depends_on:
+      backend:
+        condition: service_started
+    restart: unless-stopped
+    networks:
+      - lens_net
+
+volumes:
+  lens_pg_data:
+    driver: local
+    name: lens_pg_data
+  # Holds this app's plaintext credentials for the lifetime of the stack. Mounted
+  # read-only everywhere except keyvault-init. Never mount it into another app, and
+  # exclude it from backups.
+  lens_secrets:
+    driver: local
+    name: lens_secrets
+
+networks:
+  lens_net:
+    driver: bridge
+    name: lens_net

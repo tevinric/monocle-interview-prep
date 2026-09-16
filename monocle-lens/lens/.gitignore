@@ -1,0 +1,13 @@
+.env
+node_modules/
+__pycache__/
+*.pyc
+*.pyo
+dist/
+.DS_Store
+*.log
+lens_kv_init.sh
+
+# Source documents are fetched by `make ingest`, never committed.
+corpus/raw/*
+!corpus/raw/.gitkeep
