@@ -39,8 +39,15 @@ documents:
     title: "Regulation (EU) 2024/1689 — Artificial Intelligence Act"
     publisher: European Parliament and Council of the European Union (Official Journal)
     version: "OJ L, 12.7.2024"
-    source_url: https://eur-lex.europa.eu/legal-content/EN/TXT/PDF/?uri=OJ:L_202401689
-    licence_note: "EU legislation published in the Official Journal via EUR-Lex; free to reuse."
+    # Fetched from the Publications Office CELLAR service rather than the EUR-Lex web
+    # front end. eur-lex.europa.eu sits behind an AWS WAF that answers any non-browser
+    # request with "HTTP 202 / x-amzn-waf-action: challenge" instead of the document.
+    # CELLAR is the Publications Office's machine-access endpoint for the same official
+    # act (CELEX 32024R1689) and serves the identical 144-page OJ PDF. It resolves the
+    # format from the Accept header and the language from Accept-Language, both of which
+    # ingest/fetch.py sends — without a language it returns RDF metadata, not the text.
+    source_url: https://publications.europa.eu/resource/celex/32024R1689
+    licence_note: "EU legislation published in the Official Journal, retrieved via the Publications Office (CELLAR, CELEX 32024R1689); free to reuse."
     heading_patterns:
       - { level: 1, regex: '^CHAPTER [IVXLC]+$' }
       - { level: 1, regex: '^ANNEX [IVXLC]+$' }
