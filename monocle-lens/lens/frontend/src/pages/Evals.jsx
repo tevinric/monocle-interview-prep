@@ -76,7 +76,7 @@ function RunPanel({ questionSet, onRun, progress, running, error, hasResults }) 
   }
 
   return (
-    <div className="mt-7 rounded-xl border border-line bg-paper-soft p-6 sm:p-7">
+    <div data-tour="evals-metrics" className="mt-7 rounded-xl border border-line bg-paper-soft p-6 sm:p-7">
       <div className="flex flex-wrap items-start justify-between gap-x-8 gap-y-4">
         <div className="max-w-measure">
           <p className="text-section font-medium text-navy">
@@ -172,7 +172,7 @@ export default function Evals() {
   return (
     <div className="pb-16">
       <div className="flex flex-wrap items-start justify-between gap-x-8 gap-y-4">
-        <div>
+        <div data-tour="evals-header">
           <h1 className="page-title brand-rule">Last evaluation run</h1>
           <p className="page-deck">
             Thresholds live with the question set, so the run reports pass or fail rather than a number that
@@ -213,7 +213,7 @@ export default function Evals() {
           </p>
 
           <h2 className="section-heading brand-rule mt-10">Metrics</h2>
-          <div className="mt-4 overflow-x-auto">
+          <div data-tour="evals-metrics" className="mt-4 overflow-x-auto">
             <table className="table-base min-w-[640px]">
               <thead>
                 <tr>
@@ -247,7 +247,7 @@ export default function Evals() {
           </div>
 
           <h2 className="section-heading brand-rule mt-12">Questions</h2>
-          <div className="mt-4 overflow-x-auto">
+          <div data-tour="evals-questions" className="mt-4 overflow-x-auto">
             <table className="table-base min-w-[980px]">
               <thead>
                 <tr>

@@ -44,9 +44,9 @@ function ReproductionVerdict({ verdict }) {
   )
 }
 
-function Section({ title, note, children }) {
+function Section({ title, note, anchor, children }) {
   return (
-    <section className="mt-12">
+    <section data-tour={anchor} className="mt-12">
       <div className="border-b border-line-strong pb-2">
         <h2 className="section-heading brand-rule">{title}</h2>
         {note && <p className="mt-1 text-meta text-slate2">{note}</p>}
@@ -207,10 +207,13 @@ export default function AuditDetail() {
       <ConversationThread conversation={conversation} turns={thread} runId={run.id} />
 
       <div className="mt-4 flex flex-wrap items-start justify-between gap-x-8 gap-y-4">
-        <h1 className="brand-rule max-w-measure font-serif text-[22px] font-semibold leading-[30px] text-navy">
+        <h1
+          data-tour="run-header"
+          className="brand-rule max-w-measure font-serif text-[22px] font-semibold leading-[30px] text-navy"
+        >
           {run.user_message}
         </h1>
-        <div className="flex flex-wrap gap-2">
+        <div data-tour="run-actions" className="flex flex-wrap gap-2">
           <button
             type="button"
             className="btn"
@@ -256,7 +259,7 @@ export default function AuditDetail() {
         </div>
       </div>
 
-      <div className="mt-5">
+      <div data-tour="run-meta" className="mt-5">
         <MetaStrip
           items={[
             ['Status', <StatusChip key="s" status={run.status} />],
@@ -277,6 +280,7 @@ export default function AuditDetail() {
 
       {run.final_answer && (
         <section
+          data-tour="run-answer"
           className={`mt-7 max-w-[760px] rounded border border-line p-5 sm:p-6 ${
             run.status === 'abstained' ? 'border-l-2 border-l-slate2 bg-paper-tint' : ''
           }`}
@@ -289,22 +293,24 @@ export default function AuditDetail() {
         title="How this answer was reached"
         note={`${spans.length} recorded spans, read three ways. Selecting a step anywhere shows exactly what it sent and received.`}
       >
-        <TraceViews
-          run={run}
-          spans={spans}
-          guardrails={guardrails}
-          citations={citations}
-          selected={selected}
-          onSelect={setSelected}
-          onOpenChunk={openPassage}
-          inspector={<SpanDetail span={span} />}
-        />
+        <div data-tour="trace-canvas">
+          <TraceViews
+            run={run}
+            spans={spans}
+            guardrails={guardrails}
+            citations={citations}
+            selected={selected}
+            onSelect={setSelected}
+            onOpenChunk={openPassage}
+            inspector={<SpanDetail span={span} />}
+          />
+        </div>
         <div className="mt-7 border-t border-line pt-1">
           <SpanDetail span={span} />
         </div>
       </Section>
 
-      <Section title="Evidence" note="Each citation as it appears in the answer, with the passage it rests on.">
+      <Section anchor="run-evidence" title="Evidence" note="Each citation as it appears in the answer, with the passage it rests on.">
         {citations.length === 0 ? (
           <p className="mt-4 text-body text-slate2">
             No citations. This run did not produce an answer.
@@ -353,7 +359,7 @@ export default function AuditDetail() {
         )}
       </Section>
 
-      <Section title="Guardrails" note="What was checked before the answer was allowed out.">
+      <Section anchor="run-guardrails" title="Guardrails" note="What was checked before the answer was allowed out.">
         {guardrails.length === 0 ? (
           <p className="mt-4 text-body text-slate2">No guardrail events were recorded for this run.</p>
         ) : (
@@ -388,7 +394,7 @@ export default function AuditDetail() {
         )}
       </Section>
 
-      <Section title="Provenance" note="Everything needed to reproduce this run exactly.">
+      <Section anchor="run-provenance" title="Provenance" note="Everything needed to reproduce this run exactly.">
         <dl className="mt-4 grid gap-x-10 md:grid-cols-2">
           {[
             ['Prompt versions', prompts.map((p) => `${p.name}@${p.hash}`).join(', ') || '—', true],

@@ -106,7 +106,10 @@ export default function Help() {
   return (
     <div className="mx-auto max-w-[1120px] pb-20">
       {/* A navy structural block, the one place on the page that carries weight. */}
-      <header className="relative overflow-hidden rounded-xl bg-navy px-7 py-10 text-paper shadow-lift sm:px-10 sm:py-12">
+      <header
+        data-tour="help-header"
+        className="relative overflow-hidden rounded-xl bg-navy px-7 py-10 text-paper shadow-lift sm:px-10 sm:py-12"
+      >
         {/* The Monocle diagonal, at the scale of the block it sits in. */}
         <span
           aria-hidden="true"
@@ -154,12 +157,17 @@ export default function Help() {
                 ['Audit', '/audit', 'Every turn ever run, filterable by status, tool, framework and date. Open one for its full trace.'],
                 ['Corpus', '/corpus', 'The six documents, with publisher, version, retrieval date, checksum and passage count.'],
                 ['Evaluation', '/evals', 'The last scored run of the question set, against thresholds that ship with it.'],
+                ['Guided tour', null, 'A walkthrough of all of the above, in a couple of minutes. It is offered once each time you sign in, and is in the rail whenever you want it again.'],
               ].map(([name, to, what]) => (
                 <div key={name} className="flex flex-col gap-1 border-b border-line py-3.5 sm:flex-row sm:gap-6">
                   <dt className="w-24 shrink-0">
-                    <Link to={to} className="link text-body">
-                      {name}
-                    </Link>
+                    {to ? (
+                      <Link to={to} className="link text-body">
+                        {name}
+                      </Link>
+                    ) : (
+                      <span className="text-body text-navy">{name}</span>
+                    )}
                   </dt>
                   <dd className="max-w-[72ch] font-serif text-quote text-slate2">{what}</dd>
                 </div>

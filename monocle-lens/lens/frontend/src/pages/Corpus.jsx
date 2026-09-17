@@ -18,11 +18,13 @@ export default function Corpus() {
 
   return (
     <div className="pb-16">
-      <h1 className="page-title brand-rule">What the agent can see</h1>
-      <p className="page-deck">
-        The agent knows these documents and nothing else. A source that fails to download is shown as
-        unavailable rather than quietly dropped.
-      </p>
+      <div data-tour="corpus-header">
+        <h1 className="page-title brand-rule">What the agent can see</h1>
+        <p className="page-deck">
+          The agent knows these documents and nothing else. A source that fails to download is
+          shown as unavailable rather than quietly dropped.
+        </p>
+      </div>
 
       {error && <p className="notice-error mt-6">{error}</p>}
       {!documents && !error && <SkeletonCards count={4} />}
@@ -33,10 +35,13 @@ export default function Corpus() {
             {documents.length} documents, {fmtNum(chunks)} indexed passages.
           </p>
 
+          {/* The guided tour points at the first card as a specimen of the provenance
+              every document on this screen carries. */}
           <div className="stagger mt-2 2xl:grid 2xl:grid-cols-2 2xl:gap-x-14">
-            {documents.map((doc) => (
+            {documents.map((doc, i) => (
               <article
                 key={doc.key}
+                data-tour={i === 0 ? 'corpus-doc' : undefined}
                 className="group border-b border-line py-6 transition-colors duration-300 ease-smooth"
               >
                 <div className="flex flex-wrap items-start justify-between gap-x-6 gap-y-3">

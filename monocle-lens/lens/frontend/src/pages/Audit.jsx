@@ -31,7 +31,7 @@ function RunTable({ runs, loading, onOpen }) {
     }
   }
   return (
-    <div className="mt-6 overflow-x-auto">
+    <div data-tour="audit-list" className="mt-6 overflow-x-auto">
       <table className="table-base min-w-[860px]">
         <caption className="sr-only">Agent runs, newest first</caption>
         <thead>
@@ -171,14 +171,16 @@ export default function Audit() {
 
   return (
     <div className="pb-16">
-      <h1 className="page-title brand-rule">Conversation history</h1>
-      <p className="page-deck">
-        {view === 'threads'
-          ? 'Every conversation ever run, newest first, with each turn in the thread it belongs to. Open a turn to replay exactly what the agent did.'
-          : 'Every turn ever run, newest first. Open one to replay exactly what the agent did.'}
-      </p>
+      <div data-tour="audit-header">
+        <h1 className="page-title brand-rule">Conversation history</h1>
+        <p className="page-deck">
+          {view === 'threads'
+            ? 'Every conversation ever run, newest first, with each turn in the thread it belongs to. Open a turn to replay exactly what the agent did.'
+            : 'Every turn ever run, newest first. Open one to replay exactly what the agent did.'}
+        </p>
+      </div>
 
-      <div className="mt-8 rounded border border-line bg-paper-tint p-4">
+      <div data-tour="audit-filters" className="mt-8 rounded border border-line bg-paper-tint p-4">
         <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
           <Field label="Search questions" htmlFor="f-q" className="sm:col-span-2">
             <input id="f-q" className="input w-full" placeholder="Any text in the question" value={filters.q} onChange={set('q')} />
@@ -224,7 +226,7 @@ export default function Audit() {
         )}
       </div>
 
-      <div className="mt-6 flex flex-wrap items-center justify-between gap-3">
+      <div data-tour="audit-view" className="mt-6 flex flex-wrap items-center justify-between gap-3">
         <ViewToggle view={view} onChange={setView} />
         {view === 'threads' && conversations.length > 0 && (
           <button type="button" className="btn-quiet" onClick={() => setAll(!allCollapsed)}>
@@ -239,6 +241,7 @@ export default function Audit() {
 
       {!error && view === 'threads' && (data || !loading) && conversations.length > 0 && (
         <div
+          data-tour="audit-list"
           className={`stagger mt-6 space-y-4 ${loading ? 'opacity-60 transition-opacity duration-200' : 'transition-opacity duration-200'}`}
         >
           {conversations.map((conversation) => (

@@ -9,6 +9,7 @@ import Help from './pages/Help'
 import Brand from './components/Brand'
 import ErrorBoundary from './components/ErrorBoundary'
 import { useAuth } from './AuthGate'
+import { useTour } from './tour/TourProvider'
 import { getMeta } from './api'
 
 const NAV = [
@@ -79,6 +80,48 @@ function Account({ className = '' }) {
         Sign out
       </button>
     </div>
+  )
+}
+
+/**
+ * The way back into the guided tour.
+ *
+ * It sits with the navigation rather than in a help menu because that is where someone
+ * looks for it a week later, and it is marked with the aperture rather than a label so it
+ * reads as a mode the application can enter rather than a sixth destination.
+ */
+function TourLaunch({ orientation }) {
+  const { start, preparing, running } = useTour()
+  const vertical = orientation === 'vertical'
+  return (
+    <button
+      type="button"
+      data-tour="tour-launch"
+      onClick={() => start()}
+      disabled={preparing || running}
+      className={[
+        'group relative flex items-center gap-2.5 text-left transition-colors duration-300 ease-smooth disabled:cursor-not-allowed disabled:opacity-60',
+        vertical ? 'w-full py-2.5 pl-[26px] pr-4 text-body' : 'shrink-0 px-1 py-3.5 text-body',
+        'font-normal text-slate2-onDark hover:text-paper',
+      ].join(' ')}
+    >
+      <span
+        aria-hidden="true"
+        className={[
+          'absolute bg-paper/25 transition-transform duration-200 ease-smooth',
+          vertical
+            ? 'inset-y-1 left-0 w-[2px] origin-center scale-y-0 group-hover:scale-y-100'
+            : 'inset-x-0 bottom-0 h-[2px] origin-left scale-x-0 group-hover:scale-x-100',
+        ].join(' ')}
+      />
+      <span
+        aria-hidden="true"
+        className="flex h-3.5 w-3.5 shrink-0 items-center justify-center rounded-full border border-teal/60 transition-colors duration-300 ease-smooth group-hover:border-teal"
+      >
+        <span className="h-1 w-1 rounded-full bg-teal" />
+      </span>
+      {preparing ? 'Starting tour…' : 'Guided tour'}
+    </button>
   )
 }
 
@@ -198,8 +241,9 @@ export default function App() {
           <Brand />
           <div className="hidden sm:block">{strap}</div>
         </div>
-        <nav className="scroll-slim relative flex gap-6 overflow-x-auto px-gutter">
+        <nav data-tour="nav" className="scroll-slim relative flex gap-6 overflow-x-auto px-gutter">
           <NavItems orientation="horizontal" />
+          <TourLaunch orientation="horizontal" />
         </nav>
         <div className="relative px-gutter pb-3 sm:hidden">{strap}</div>
       </header>
@@ -212,13 +256,16 @@ export default function App() {
             <div className="mt-3">{strap}</div>
           </div>
 
-          <nav className="mt-7">
+          <nav data-tour="nav" className="mt-7">
             <NavItems orientation="vertical" />
+            <div className="mt-2 border-t border-navy-rule pt-2">
+              <TourLaunch orientation="vertical" />
+            </div>
           </nav>
 
           <div className="mt-auto px-gutter pb-7 pt-10">
             <Account className="border-t border-navy-rule pb-4 pt-3" />
-            <div className="border-t border-navy-rule pt-3">
+            <div data-tour="run-context" className="border-t border-navy-rule pt-3">
               <RunContext meta={meta} className="text-meta font-normal" />
             </div>
           </div>
