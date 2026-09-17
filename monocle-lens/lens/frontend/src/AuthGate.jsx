@@ -2,9 +2,16 @@ import { createContext, useCallback, useContext, useEffect, useState } from 'rea
 import Login from './pages/Login'
 import LensMark from './components/LensMark'
 import { apiBaseUrl } from './api'
-import { accountLabel, initAuth, signIn, signOut, subscribe } from './auth'
+import { accountFirstName, accountKey, accountLabel, initAuth, signIn, signOut, subscribe } from './auth'
 
-const AuthContext = createContext({ mode: 'open', account: null, name: null, signOut: () => {} })
+const AuthContext = createContext({
+  mode: 'open',
+  account: null,
+  name: null,
+  firstName: null,
+  accountKey: 'local',
+  signOut: () => {},
+})
 
 export const useAuth = () => useContext(AuthContext)
 
@@ -77,6 +84,10 @@ export default function AuthGate({ children }) {
         mode: state.mode,
         account: state.account,
         name: accountLabel(state.account),
+        // The forename greets the person once, in the welcome dialog; the key scopes
+        // their tour preference to them rather than to the browser.
+        firstName: accountFirstName(state.account),
+        accountKey: accountKey(state.account),
         username: state.account?.username || null,
         signOut,
       }}

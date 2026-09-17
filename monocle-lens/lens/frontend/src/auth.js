@@ -182,3 +182,49 @@ export function reauthenticate() {
     reauthenticating = false
   })
 }
+
+
+/**
+ * The person's first name, for the one place the interface addresses them directly.
+ *
+ * `given_name` is the claim to trust: it is the name as the directory holds it, already
+ * split from the surname. Entra omits it for some account types, so this falls back —
+ * through the display name (handling the "Surname, Forename" form some tenants issue),
+ * then the local part of the username — rather than greeting nobody. Null only when
+ * there is no account at all, which is every DEV session.
+ */
+export function accountFirstName(account = state.account) {
+  if (!account) return null
+
+  const claims = account.idTokenClaims || {}
+  const given = claims.given_name || claims.givenname
+  if (given && String(given).trim()) return String(given).trim().split(/\s+/)[0]
+
+  const display = (account.name || '').trim()
+  if (display) {
+    // "Richard, Tevin" — the forename is what follows the comma.
+    if (display.includes(',')) {
+      const forename = display.split(',')[1]?.trim()
+      if (forename) return forename.split(/\s+/)[0]
+    }
+    return display.split(/\s+/)[0]
+  }
+
+  const local = (account.username || '').split('@')[0]
+  if (local) {
+    const first = local.split(/[._\-+]/)[0]
+    if (first) return first.charAt(0).toUpperCase() + first.slice(1)
+  }
+  return null
+}
+
+/**
+ * A stable key for this account, so a preference recorded against one person — whether
+ * the welcome tour has been turned off — does not follow the next person to sign in on
+ * the same machine. `homeAccountId` is unique per account per tenant and survives a
+ * sign-out; DEV has no account at all and shares one key.
+ */
+export function accountKey(account = state.account) {
+  if (!account) return 'local'
+  return account.homeAccountId || account.localAccountId || account.username || 'local'
+}

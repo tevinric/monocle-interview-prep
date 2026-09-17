@@ -18,6 +18,12 @@ make ingest                       # downloads the corpus, parses, chunks, embeds
 
 Then open **http://localhost:3100**. The API is on 5100, PostgreSQL on 5439.
 
+On the first sign-in of a session Lens greets you by name — the `given_name` claim from
+Entra — and offers a guided tour: fourteen stops across all five screens, two minutes end
+to end, each one a line on what the screen is and a line on why it matters where model risk
+is regulated. Decline it permanently with the checkbox, or start it again any time from
+**Guided tour** in the rail.
+
 ---
 
 ## Architecture
@@ -273,7 +279,8 @@ lens/
       ingest/    fetch.py parse_pdf.py parse_html.py chunk.py embed.py cli.py
       demo/      seed.py record.py questions.yaml recordings/
       evals/     run.py
-  frontend/src/  pages/{Ask,Audit,AuditDetail,Corpus,Evals}.jsx  components/  api.js
+  frontend/src/  pages/{Ask,Audit,AuditDetail,Corpus,Evals,Help}.jsx  components/  api.js
+                 tour/      the guided tour: steps.js is its script, the rest is the engine
 ```
 
 ## Make targets

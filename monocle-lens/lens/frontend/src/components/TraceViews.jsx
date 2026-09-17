@@ -95,6 +95,19 @@ export default function TraceViews({
   useEffect(() => remember(STORE, view), [view])
   useEffect(() => remember(STORE_DETAIL, detail), [detail])
 
+  // The guided tour walks all three readings of a trace in turn, and asks for each one
+  // by event rather than by prop: this component is where the choice lives, the tour is
+  // not always mounted, and neither should have to know about the other. The remembered
+  // view is written as usual, so the last one the tour showed is the one left behind.
+  useEffect(() => {
+    const onRequest = (e) => {
+      const wanted = e.detail
+      if (['flow', 'knowledge', 'timeline'].includes(wanted)) setView(wanted)
+    }
+    window.addEventListener('lens:tour-trace-view', onRequest)
+    return () => window.removeEventListener('lens:tour-trace-view', onRequest)
+  }, [])
+
   useEffect(() => {
     if (!expanded) return undefined
     closeRef.current?.focus()

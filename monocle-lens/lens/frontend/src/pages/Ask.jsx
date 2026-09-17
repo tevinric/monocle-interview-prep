@@ -34,7 +34,10 @@ function AgentAvatar({ className = 'h-8 w-8' }) {
 /** Who you are talking to and what it does. The chat has no other preamble. */
 function ChatHeader({ onReset, canReset }) {
   return (
-    <header className="flex shrink-0 items-center gap-3.5 border-b border-line bg-paper py-4">
+    <header
+      data-tour="chat-header"
+      className="flex shrink-0 items-center gap-3.5 border-b border-line bg-paper py-4"
+    >
       <AgentAvatar className="h-10 w-10" />
       <div className="min-w-0">
         <h1 className="text-[16px] font-semibold leading-tight tracking-[-0.01em] text-navy">
@@ -252,6 +255,7 @@ function ExampleQuestions({ onPick, disabled }) {
 
       <button
         type="button"
+        data-tour="examples"
         onClick={() => setOpen((v) => !v)}
         aria-expanded={open}
         className="btn-quiet -ml-1"
@@ -283,6 +287,7 @@ function Composer({ value, onChange, onSubmit, running }) {
 
   return (
     <form
+      data-tour="composer"
       onSubmit={(e) => {
         e.preventDefault()
         onSubmit()
@@ -435,7 +440,7 @@ export default function Ask({ meta }) {
       <ChatHeader onReset={reset} canReset={messages.length > 0} />
 
       {/* The thread. Empty until someone asks something. */}
-      <div ref={scroller} className="scroll-slim min-h-0 flex-1 overflow-y-auto">
+      <div ref={scroller} data-tour="thread" className="scroll-slim min-h-0 flex-1 overflow-y-auto">
         <div
           className={`mx-auto flex w-full max-w-[780px] flex-col py-7 ${
             messages.length === 0 ? 'h-full justify-center' : 'space-y-6'
