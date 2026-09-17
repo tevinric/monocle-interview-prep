@@ -14,6 +14,17 @@ import requests
 USER_AGENT = 'Mozilla/5.0 (compatible; Lens-ingest/1.0; regulatory RAG demonstration)'
 TIMEOUT = (15, 180)
 
+# Sent on every request. Most publishers serve one file per URL and ignore it, but the EU
+# Publications Office (CELLAR, which serves the AI Act) negotiates BOTH format and
+# language: with no Accept-Language it answers a PDF request with RDF metadata about the
+# act instead of the act. 'eng' is the three-letter form its vocabulary uses; it also
+# accepts 'en'. Verified harmless against the other five sources.
+REQUEST_HEADERS = {
+    'User-Agent': USER_AGENT,
+    'Accept': 'application/pdf,text/html;q=0.9,*/*;q=0.8',
+    'Accept-Language': 'eng',
+}
+
 
 class Fetched:
     def __init__(self, status, path=None, sha256=None, bytes_=None, content_type=None,
@@ -54,14 +65,22 @@ def fetch(doc, raw_dir, offline=False):
         return _describe(cached, 'cached copy (offline ingest); retrieved_at is the file timestamp')
 
     try:
-        response = requests.get(doc['source_url'], headers={'User-Agent': USER_AGENT,
-                                                            'Accept': 'application/pdf,text/html;q=0.9,*/*;q=0.8'},
+        response = requests.get(doc['source_url'], headers=REQUEST_HEADERS,
                                 timeout=TIMEOUT, allow_redirects=True)
     except requests.RequestException as e:
         return Fetched('unavailable', detail=f'download failed: {e.__class__.__name__}: {e}')
 
     if response.status_code != 200:
-        return Fetched('unavailable', detail=f'HTTP {response.status_code} from {response.url}')
+        # A bare status code is a poor explanation when the status is the publisher's bot
+        # protection rather than a missing file — an AWS WAF challenge arrives as a 202
+        # with an empty body, which reads like a server fault and is not one. Name it, so
+        # the fix (a machine-access endpoint for the same document) is the obvious one.
+        challenge = response.headers.get('x-amzn-waf-action') or response.headers.get('cf-mitigated')
+        reason = (f'HTTP {response.status_code} from {response.url}')
+        if challenge:
+            reason += (f' — the publisher answered with a bot challenge ({challenge}), not the document. '
+                       'This URL needs a browser; use the publisher\'s machine-access endpoint instead.')
+        return Fetched('unavailable', detail=reason)
 
     body = response.content
     declared = (response.headers.get('Content-Type') or '').split(';')[0].strip().lower()
